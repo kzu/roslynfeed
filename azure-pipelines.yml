@@ -1,0 +1,26 @@
+﻿variables:
+- name: AzureSubscription
+  value: roslyn-Azure
+- name: FunctionAppName
+  value: roslyn
+
+jobs:
+- job: Build
+  pool:
+    vmImage: windows-latest
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  - task: MSBuild@1
+    displayName: 'Build'
+    inputs:
+      solution: 'AzureFunction.sln'
+      msbuildArguments: '-r -p:DeployOnBuild=true -p:DeployDefaultTarget=WebPublish -p:WebPublishMethod=FileSystem -p:publishUrl=$(Pipeline.Workspace)\artifacts'
+      configuration: 'Release'
+
+  - task: AzureFunctionApp@1
+    displayName: Deploy
+    inputs:
+      azureSubscription: $(AzureSubscription)
+      appName: $(FunctionAppName)
+      package: $(Pipeline.Workspace)\artifacts
